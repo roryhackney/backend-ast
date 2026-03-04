@@ -2,10 +2,11 @@
   "name": "backend-ast",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "start": "node ./bin/www",
     "devstart": "nodemon ./bin/www",
-    "serverstart": "SET DEBUG = backend-ast:* & npm start"
+    "serverstart": "set \"DEBUG=backend-ast:*\" && npm start"
   },
   "dependencies": {
     "cookie-parser": "^1.4.7",
