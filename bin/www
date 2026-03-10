@@ -2,6 +2,9 @@ import app from '../app.js';
 import debug from 'debug';
 const dbg = debug('backend-ast:server');
 import { createServer } from 'http';
+import connect from '../models/connect.js';
+
+const mongoose = await connect();
 
 const port = normalizePort(process.env.PORT || '3000');
 app.set('port', port);
