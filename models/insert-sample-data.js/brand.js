@@ -1,7 +1,7 @@
 import connect from '../connect.js';
 import Brand from '../brand.js';
 
-const mongoose = await connect();
+await connect();
 
 await createBrand("Winsor & Newton", "Quality products of ink, paint brushes, watercolor, and so on.");
 console.log("Added successfully");
