@@ -2,7 +2,6 @@ import request from 'supertest';
 import app from '../app';
 import 'dotenv/config';
 
-
 describe('Basic route test', () => {
     it('should load the test route', async () => {
         const response = await request(app).get('/test-api');
