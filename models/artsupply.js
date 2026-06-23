@@ -1,4 +1,6 @@
 import mongoose from 'mongoose';
+import { validateInteger } from './helpers';
+
 const Schema = mongoose.Schema;
 const ArtSupplySchema = new Schema({
     name: {
@@ -33,24 +35,14 @@ const ArtSupplySchema = new Schema({
         type: Number,
         min: 1,
         max: 5,
-        validate: {
-            validator: function(val) {
-                return Number.isInteger(val);
-            },
-            message: props => `${props.value} must be an integer 1-5.`
-        }
+        validator: validateInteger
     },
     quantity: {
         type: Number,
         min: 0,
         max: 100,
         required: true,
-        validate: {
-            validator: function(val) {
-                return Number.isInteger(val);
-            },
-            message: props => `${props.value} must be an integer 0-100.`
-        }
+        validate: validateIntegers
     },
     onWishlist: {
         type: Boolean,

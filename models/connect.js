@@ -25,13 +25,5 @@ async function connectMongoose() {
     }
 }
 
-async function connect() {
-    try {
-        return await connectMongoose();
-    } catch (err) {
-        console.error("Failed to connect to MongoDB:", err);
-        process.exit(1);
-    }
-}
-
-export default connect;
+const singleConnection = await connectMongoose();
+export default singleConnection;
