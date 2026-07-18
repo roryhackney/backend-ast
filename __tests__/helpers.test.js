@@ -92,15 +92,17 @@ describe('check2FA should verify entered code against db stored code and timesta
             .then(result => expect(result).toBe(false));
     });
 
-    it('should fail if the window has expired', () => {
+    it('should fail if the window has expired', async () => {
+        let result;
         setTimeout(
-            () => {
-                VALID_CODE
-                    .then(code => send2FA(code, ONE_MINUTE - 1))
+            async () => {
+                result = VALID_CODE
+                    .then(code => check2FA(code, ONE_MINUTE - 1))
                     .then(result => expect(result).toBe(false))
             },
             ONE_MINUTE
         );
+        return result;
     });
 });
 

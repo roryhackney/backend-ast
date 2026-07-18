@@ -102,4 +102,9 @@ describe("Verify session test", () => {
         const response = await request(app).get("/verifySession").set("Cookie", cookie);
         return expect(response.status).toBe(200);
     });
+
+    it("should not verify if token is not in db", async () => {
+        return request(app).get("/verifySession").set("Cookie", ["token=AN_INVALID_TOKEN"])
+        .then(result => expect(result.status).toBe(401));
+    });
 });
