@@ -12,7 +12,13 @@ const Code2FASchema = new Schema({
         max: 999999,
         validate: validateInteger
     },
-    timestamp: {
+    createdAt: {
+        type: Number,
+        required: true,
+        min: 0,
+        validate: validateInteger
+    },
+    expiresAt: {
         type: Number,
         required: true,
         min: 0,

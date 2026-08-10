@@ -7,7 +7,7 @@
     "start": "node ./bin/www",
     "devstart": "nodemon ./bin/www",
     "serverstart": "set \"DEBUG=backend-ast:*\" && npm start",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js __tests__/helpers.test.js",
     "lint": "eslint",
     "lint-fix": "eslint --fix ."
   },

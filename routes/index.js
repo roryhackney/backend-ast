@@ -20,7 +20,7 @@ router.post("/login", async function(req, res) {
     const pass = req?.body?.password;
     if (checkLogin(user, pass)) {
         const result = await send2FA();
-        if (result) res.status(200).send();
+        if (result != -1) res.status(200).send();
         else res.status(500).send();
     } else {
         res.status(401).send();
@@ -32,7 +32,7 @@ router.post("/verify2FA", async function(req, res) {
     const code = req?.body?.code;
     if (! code) return res.status(401).send();
 
-    const result = await check2FA(code, minutes(10));
+    const result = await check2FA(code);
     if (! result) return res.status(401).send();
 
     //generate token
@@ -64,4 +64,18 @@ router.get("/verifySession", async function(req, res) {
     }
 });
 
+router.get("/logout", async function(req, res) {
+    //clear cookies
+    if (req.cookies?.token) {
+        res.clearCookie("token");
+    }
+    //delete session from db
+    
+    
+});
+
+router.get("deleteExpiredSessionsAnd2FAs", (req, res) => {
+    
+});
+    
 export default router;

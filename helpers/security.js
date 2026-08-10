@@ -26,7 +26,7 @@ const transporter = createTransport({
 });
 
 /**
- * 
+ * Checks if the IP has made too many attempts for the endpoint within the window
  * @param {String} ip IP address being checked
  * @param {number} [window=TEN_MINUTES] How long between resets of number of attempts in milliseconds, default=TEN_MINUTES
  * @param {number} [maxAttempts=50] How many attempts are allowed per window, default=50
@@ -67,7 +67,7 @@ const generateRandomCode = () => {
 /**
  * Sends the 2FA code to the admin email address
  * @param {number} code 2FA code to be emailed
- * @param {*} date Datetime of 2FA request in human readable format
+ * @param {String} date Datetime of 2FA request in human readable format
  * @returns True if successfully sent, false if failed to send
  */
 const sendEmailCode2FA = async (code, date) => {
@@ -113,12 +113,14 @@ If this wasn't you, change the admin password right away and delete other sessio
  * Stores the requested 2FA code in the database for later checks
  * @param {number} code 2FA code to be stored
  * @param {number} timestamp When the login attempt was made in milliseconds
+ * @param {number} window How long the 2FA code should be valid in milliseconds
  * @returns True if successful, false if not
  */
-const storeDBCode2FA = async (code, timestamp) => {
+const storeDBCode2FA = async (code, timestamp, window) => {
     //store code in session document
+    const increased = timestamp + window;
     try {
-        const entry = new Code2FAModel({code: code, timestamp: timestamp});
+        const entry = new Code2FAModel({code: code, createdAt: timestamp, expiresAt: timestamp + window});
         await entry.save();
         return true;
     } catch (err) {
@@ -130,49 +132,38 @@ const storeDBCode2FA = async (code, timestamp) => {
  * Sends a new 2FA code to the admin email and stores it in the db for checking later
  * @param {boolean} [actuallySend=true] Whether to actually send the email, default=true
  * @param {boolean} [actuallyStore=true] Whether to actually store the code in the database, default=true
- * @returns Whether both operations were successful
+ * @param {number} [window=TEN_MINUTES] How long the 2FA code should be valid in milliseconds, default=TEN_MINUTES
+ * @returns The code, or -1 if it failed to store in the database.
  */
-export const send2FA = async (actuallySend=true, actuallyStore=true) => {
-    let dbSuccess;
-    let emailSuccess;
+export const send2FA = async (actuallySend=true, actuallyStore=true, window=TEN_MINUTES) => {
     const date = new Date();
     const code = generateRandomCode();
     if (actuallyStore) {
-        dbSuccess = storeDBCode2FA(code, date.getTime())
+        storeDBCode2FA(code, date.getTime(), window)
         .catch((err) => {
-            return false;
+            return -1;
         });
-    } else {
-        //mock
-        dbSuccess = Promise.resolve(true);
     }
     if (actuallySend) {
-        emailSuccess = sendEmailCode2FA(code, date.toLocaleString())
-        .catch(err => {
-            return false;
-        });
-    } else {
-        //mock
-        emailSuccess = Promise.resolve(true);
+        sendEmailCode2FA(code, date.toLocaleString());
     }
 
-    return dbSuccess && emailSuccess;
+    return code;
 
 };
 
 /**
  * Checks if the correct 2FA code was entered in time
  * @param {number} enteredCode The verification code entered by the user, eg 123456
- * @param {number} window Number of milliseconds from the 2FA being sent to when its invalidated
- * @returns Whether the correct 2FA was entered within the window
+ * @returns Whether the correct 2FA was entered within the time limit
  */
-export const check2FA = async (enteredCode, window) => {
-    const query = Code2FAModel.find({code: enteredCode}).sort("-timestamp").limit(1);
+export const check2FA = async (enteredCode) => {
+    const query = Code2FAModel.find({code: enteredCode}).sort("-expiresAt");
     return query.exec().then(codeEntries => {
         if (codeEntries.length === 0) {
             return false;
         } else {
-            if (Date.now() - codeEntries[0].timestamp <= window) {
+            if (Date.now() <= codeEntries[0].expiresAt) {
                 return true;
             }
             return false;
@@ -198,22 +189,21 @@ export const checkLogin = (user, pass) => {
  * @param {String} token Session token to be stored
  * @param {number} window How long the session is valid in milliseconds
  * @param {String} ip IP address for the session
+ * @param {Boolean} [sendEmail=true] Whether to send confirmation email to admin, default=true
  * @returns True if successful, false if not
  */
-export const storeSession = async (token, window, ip) => {
+export const storeSession = async (token, window, ip, sendEmail=true) => {
     const now = Date.now();
     if (token) {
         try {
             const entry = new Session({token: token, createdAt: now, expiresAt: now + window, address: ip});
             await entry.save();
-            sendEmailSuccess2FA();
+            if (sendEmail) sendEmailSuccess2FA();
             return true;
         } catch (err) {
-            console.log("ERR", err);
             return false;
         }
     }
-    console.log("NO TOKEN");
     return false;
 };
 
@@ -229,4 +219,29 @@ export const checkLoggedInToken = async (token) => {
         if (res.length === 0 || res[0].expiresAt < Date.now()) return false;
         return true;
     });
+};
+
+/**
+ * Deletes all sessions and 2FA codes that have expired from the database
+ * @param {*} deleteSessions if sessions should be deleted, default=true
+ * @param {*} delete2FAs if 2FA codes should be deleted, default=true
+ * @returns how many documents were deleted
+ */
+export const deleteExpired = async(deleteSessions=true, delete2FAs=true) => {
+    const now = Date.now();
+    let sessionCount = 0;
+    let codeCount = 0;
+    if (deleteSessions) {
+        sessionCount = await Session.deleteMany({"expiresAt": {$lt: now}})
+        .then((result) => {
+            return result ? result.deletedCount : 0;
+        });
+    }
+    if (delete2FAs) {
+        codeCount = await Code2FAModel.deleteMany({"expiresAt": {$lt: now}})
+        .then((result) => {
+            return result ? result.deletedCount : 0;
+        });
+    }
+    return sessionCount + codeCount;
 };

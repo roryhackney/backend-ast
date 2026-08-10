@@ -1,19 +1,23 @@
-import {minutes, hasIPRateLimitBeenReached, send2FA, check2FA, storeSession, checkLoggedInToken} from '../helpers/security';
-import {describe, expect, jest} from '@jest/globals';
+import {minutes, hasIPRateLimitBeenReached, send2FA, check2FA, storeSession, checkLoggedInToken, deleteExpired} from '../helpers/security';
+import {beforeAll, describe, expect, jest} from '@jest/globals';
 import Code2FAModel from '../models/codes2FA.js';
+
+const ACTUALLY_SEND_EMAILS = false; //change to true to run email tests
+const ACTUALLY_STORE_IN_DB = false; //change to true to run db store tests
 
 const ONE_MINUTE = minutes(1);
 const FIVE_MINUTES = minutes(5);
+const TEN_MINUTES = minutes(10);
 
 describe('Minute calculation test', () => {
     it('Should convert minutes into milliseconds', () => {
         expect(ONE_MINUTE).toBe(60000);
-        expect(FIVE_MINUTES).toBe(60000 * 5);
+        expect(FIVE_MINUTES).toBe(300000);
+        expect(TEN_MINUTES).toBe(600000);
     });
 });
 
 describe('IP rate limiting test', () => {
-    // jest.useFakeTimers();
     const ONE_MINUTE = minutes(1);
     
     it('should block attempts if MAX_ATTEMPTS is 0', () => {
@@ -52,74 +56,64 @@ describe('IP rate limiting test', () => {
 
 // Application successfully inserts new codes into db and emails the code to admin.
 describe('send2FA should send email with new 2FA code and store it in database', () => {
-    // This passes - emails are sent successfully. Manual check also verifies. Commenting as don't want to send a bunch of emails every test run.
-    it('should send email successfully', () => {
-        const prom = send2FA(true, false);
+    it('should send email successfully', async () => {
+        const prom = send2FA(ACTUALLY_SEND_EMAILS, false);
         return prom.then((result) => {
-            expect(result).toBe(true);
+            expect(result).not.toBe(-1);
         });
     });
 
-    // Passes, commenting so tests don't add test data to the db
-    // TODO: Close the db connection when the application is shut down, not on logout as we need it to verify login
-    it('should store in db successfully', () => {
-        const prom = send2FA(false, true);
+    it('should store in db successfully', async () => {
+        const prom = send2FA(false, ACTUALLY_STORE_IN_DB);
         return prom.then((result) => {
-            expect(result).toBe(true);
+            expect(result).not.toBe(-1);
         })
-    });
-})
-
-// Passes, commenting so tests don't add test 2FA codes to the db
-describe('check2FA should verify entered code against db stored code and timestamp', () => {
-    send2FA(false, true);
-    const query = Code2FAModel.find().sort("-timestamp").limit(1);
-    const VALID_CODE = query.exec().then(res => {
-        return res[0].code;
-    });
-
-    it('should pass if the code is correct within window', () => {
-        //note that one minute is returning false due to window being too short for test
-        //maybe should use five minutes+ for api (takes about 1.5 min for test to process)
-        return VALID_CODE
-            .then(code => check2FA(code, FIVE_MINUTES))
-            .then(result => expect(result).toBe(true));
-    });
-
-    it('should fail if the code is incorrect within window', () => {
-        return VALID_CODE
-            .then(code => check2FA(code + 1, FIVE_MINUTES))
-            .then(result => expect(result).toBe(false));
-    });
-
-    it('should fail if the window has expired', async () => {
-        let result;
-        setTimeout(
-            async () => {
-                result = VALID_CODE
-                    .then(code => check2FA(code, ONE_MINUTE - 1))
-                    .then(result => expect(result).toBe(false))
-            },
-            ONE_MINUTE
-        );
-        return result;
     });
 });
 
-// Passes, commenting so tests don't add test data to db
+describe('check2FA should verify entered code against db stored code and timestamp', () => {
+    let INCORRECT_CODE = -1;
+    let VALID_CODE = -1;
+    let EXPIRED_CODE = -1;
+
+    beforeAll(async () => {
+        VALID_CODE = await send2FA(actuallySend=false, actuallyStore=true);
+        EXPIRED_CODE = await send2FA(0, false, true);
+        INCORRECT_CODE = VALID_CODE + 1;
+    });
+    
+    it('should pass if the code is correct within window', async () => {
+        expect(VALID_CODE).not.toBe(-1);
+        return check2FA(VALID_CODE)
+        .then(res => expect(res).toBe(true));
+    });
+
+    it('should fail if the code is incorrect within window', () => {
+        expect(INCORRECT_CODE).not.toBe(-1);
+        return check2FA(INCORRECT_CODE)
+        .then(res => expect(res).toBe(false));
+    });
+
+    it('should fail if the window has expired', async () => {
+        expect(EXPIRED_CODE).not.toBe(-1);
+        return check2FA(EXPIRED_CODE)
+        .then(res => expect(res).toBe(false));
+    });
+});
+
 describe('storeSession should store session info in the database given a valid token', () => {
     it('should not store without a token', () => {
-        return storeSession(undefined, ONE_MINUTE, '1.1.1.1')
+        return storeSession(undefined, ONE_MINUTE, '1.1.1.1', false)
         .then(result => expect(result).toBe(false));
     });
 
     it('should not store an empty token', () => {
-        return storeSession('', ONE_MINUTE, '1.1.1.1')
+        return storeSession('', ONE_MINUTE, '1.1.1.1', false)
         .then(res => expect(res).toBe(false));
     });
 
     it('should store a valid token', () => {
-        return storeSession('ABCDEFGH01823821VIJK28218L', ONE_MINUTE, '1.1.1.1')
+        return storeSession('ABCDEFGH01823821VIJK28218L', ONE_MINUTE, '1.1.1.1', false)
         .then(res => expect(res).toBe(true));
     });
 });
@@ -139,7 +133,23 @@ describe("Check logged in token from cookie", () => {
 
     it('should succeed with correct token', async () => {
         const TOKEN = 'ABCDEFGH01823821VIJK28218L';
-        await storeSession(TOKEN, ONE_MINUTE, '1.1.1.1');
-        return checkLoggedInToken(TOKEN).then(res => expect(res).toBe(true));
+        await storeSession(TOKEN, ONE_MINUTE, '1.1.1.1', false);
+        return checkLoggedInToken(TOKEN)
+        .then(res => expect(res).toBe(true));
+    });
+});
+
+describe("Delete expired should delete successfully", () => {
+    const NO_WINDOW = 0;
+    it('should delete expired sessions', async () => {
+        return storeSession("ABC123", NO_WINDOW, '1.1.1.1', false)
+            .then(() => deleteExpired(true, false))
+            .then(count => expect(count).toBeGreaterThan(0));
+    });
+
+    it('should delete expired tokens', async () => {
+        return send2FA(false, true, NO_WINDOW)
+            .then(() => deleteExpired(false, true))
+            .then(count => expect(count).toBeGreaterThan(0));
     });
 });

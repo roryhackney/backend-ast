@@ -23,9 +23,9 @@ Returns true if the email was successfully sent
 Sends email to admin confirming successful 2FA code was entered and user session was created
 Returns true if the email was successfully sent
 
-### async storeDBCode2FA(code, timestamp): Boolean
-code: Number, timestamp: Number
-Stores the 2FA code in the database
+### async storeDBCode2FA(code, timestamp, window): Boolean
+code: Number, timestamp: Number, window: Number
+Stores the 2FA code in the database with timestamp and expiresAt (timestamp + window)
 Returns true if it was successfully stored
 
 --Public--
@@ -38,14 +38,14 @@ Returns the integer conversion of minutes to milliseconds
 ip: String, window=minutes(10): Number, maxAttempts=50: Number, endpoint="/login": String
 Returns true if IP has made maxAttempts+ attempts to use endpoint within window
 
-### async send2FA(actuallySend, actuallyStore): Boolean
-actuallySend=true: Boolean, actuallyStore=true: Boolean
-Generates a 2FA code, stores it in the database if actuallyStore, and sends it to the admin email if actuallySend with the timestamp it was created at.
-Returns true if both operations were successful (if operation was not attempted, it is considered successful)
+### async send2FA(actuallySend, actuallyStore, window): Number
+actuallySend=true: Boolean, actuallyStore=true: Boolean, window=TEN_MINUTES: Number
+Generates a 2FA code, stores it in the database with timestamp and expiresAt (timestamp + window) if actuallyStore, and sends it to the admin email if actuallySend with the timestamp it was created at.
+Returns the code, or -1 if the code failed to be stored in the database
 
-### async check2FA(enteredCode, window): Boolean
-Retrieves 2FA code and timestamp from the database and checks it against the enteredCode and window
-Returns true if the enteredCode matches the database and now - timestamp <= window
+### async check2FA(enteredCode): Boolean
+Retrieves 2FA code and expiresAt from the database and checks it against the enteredCode
+Returns true if the enteredCode matches the database and now <= expiresAt
 
 ### checkLogin(user, pass): Boolean
 user: String, pass: String
@@ -65,8 +65,6 @@ Deletes expired Sessions from the database if deleteSessions and 2FA codes if de
 Returns the Number of deleted documents
 
 ## Routes
-
---Completed and tested--
 
 ### Login (/login) POST
 Checks if req.body contains admin credentials and returns status code.

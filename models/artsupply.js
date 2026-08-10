@@ -42,7 +42,7 @@ const ArtSupplySchema = new Schema({
         min: 0,
         max: 100,
         required: true,
-        validate: validateIntegers
+        validate: validateInteger
     },
     onWishlist: {
         type: Boolean,
