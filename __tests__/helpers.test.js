@@ -51,7 +51,7 @@ describe('IP rate limiting test', () => {
         expect(hasIPRateLimitBeenReached(IP, ONE_MINUTE, MAX_ATTEMPTS)).toBe(true);
     });
 
-    it('should allow attempts again after WINDOW has expired', () => {
+    it('should allow attempts again after WINDOW has expired', async () => {
         const IP = '4.4.4.4';
         const MAX_ATTEMPTS = 1;
         expect(hasIPRateLimitBeenReached(IP, 500, MAX_ATTEMPTS)).toBe(false);
@@ -92,7 +92,7 @@ describe('check2FA should verify entered code against db stored code and timesta
         expect(result).toBe(true);
     });
 
-    it('should fail if the code is incorrect within window', () => {
+    it('should fail if the code is incorrect within window', async () => {
         expect(INCORRECT_CODE).not.toBe(-1);
         const result = await check2FA(INCORRECT_CODE);
         expect(result).toBe(false);
@@ -106,17 +106,17 @@ describe('check2FA should verify entered code against db stored code and timesta
 });
 
 describe('storeSession should store session info in the database given a valid token', () => {
-    it('should not store without a token', () => {
+    it('should not store without a token', async () => {
         const result = await storeSession(undefined, ONE_MINUTE, '1.1.1.1', false);
         expect(result).toBe(false);
     });
 
-    it('should not store an empty token', () => {
+    it('should not store an empty token', async () => {
         const res = await storeSession('', ONE_MINUTE, '1.1.1.1', false);
         expect(res).toBe(false);
     });
 
-    it('should store a valid token', () => {
+    it('should store a valid token', async () => {
         const res = await storeSession('ABCDEFGH01823821VIJK28218L', ONE_MINUTE, '1.1.1.1', false);
         expect(res).toBe(true);
     });
@@ -167,12 +167,12 @@ describe("Delete session should delete the session", () => {
         expect(res).toBe(false);
     });
 
-    it('should not delete with valid but not present token', () => {
+    it('should not delete with valid but not present token', async () => {
         const res = await deleteSession("ABCD012345667");
         expect(res).toBe(false);
     });
 
-    it('should delete a present token', () => {
+    it('should delete a present token', async () => {
         const token = generateSessionToken();
         const res = await storeSession(token, TEN_MINUTES, '1.1.1.1', false);
         expect(res).toBe(true);
