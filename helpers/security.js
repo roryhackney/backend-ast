@@ -1,4 +1,5 @@
 import {createTransport} from 'nodemailer';
+import {randomBytes} from 'node:crypto';
 import 'dotenv/config';
 
 import connect from '../models/connect.js';
@@ -65,6 +66,15 @@ const generateRandomCode = () => {
 }
 
 /**
+ * Generates a random session token with given length for auth
+ * @param {Number} [length=32] length of the token, default=32
+ * @returns Random hex string with the given length
+ */
+export const generateSessionToken = (length = 32) => {
+    return randomBytes(length).toString('hex').slice(0, length);
+}
+
+/**
  * Sends the 2FA code to the admin email address
  * @param {number} code 2FA code to be emailed
  * @param {String} date Datetime of 2FA request in human readable format
@@ -118,7 +128,6 @@ If this wasn't you, change the admin password right away and delete other sessio
  */
 const storeDBCode2FA = async (code, timestamp, window) => {
     //store code in session document
-    const increased = timestamp + window;
     try {
         const entry = new Code2FAModel({code: code, createdAt: timestamp, expiresAt: timestamp + window});
         await entry.save();
@@ -140,9 +149,9 @@ export const send2FA = async (actuallySend=true, actuallyStore=true, window=TEN_
     const code = generateRandomCode();
     if (actuallyStore) {
         storeDBCode2FA(code, date.getTime(), window)
-        .catch((err) => {
-            return -1;
-        });
+            .catch((err) => {
+                return -1;
+            });
     }
     if (actuallySend) {
         sendEmailCode2FA(code, date.toLocaleString());
@@ -233,15 +242,31 @@ export const deleteExpired = async(deleteSessions=true, delete2FAs=true) => {
     let codeCount = 0;
     if (deleteSessions) {
         sessionCount = await Session.deleteMany({"expiresAt": {$lt: now}})
-        .then((result) => {
-            return result ? result.deletedCount : 0;
-        });
+            .then((result) => {
+                return result ? result.deletedCount : 0;
+            });
     }
     if (delete2FAs) {
         codeCount = await Code2FAModel.deleteMany({"expiresAt": {$lt: now}})
-        .then((result) => {
-            return result ? result.deletedCount : 0;
-        });
+            .then((result) => {
+                return result ? result.deletedCount : 0;
+            });
     }
     return sessionCount + codeCount;
 };
+
+/**
+ * Deletes sessions with the given token from the database
+ * @param {*} token session token to be deleted
+ * @returns True if the session was deleted, else false
+ */
+export const deleteSession = async (token) => {
+    if (token) {
+        return await Session.deleteMany({"token": token})
+            .then((result) => {
+                const count = result.deletedCount ?? 0;
+                return count > 0;
+            });
+    }
+    return false;
+}

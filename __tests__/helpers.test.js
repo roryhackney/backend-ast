@@ -1,4 +1,14 @@
-import {minutes, hasIPRateLimitBeenReached, send2FA, check2FA, storeSession, checkLoggedInToken, deleteExpired} from '../helpers/security';
+import {
+    check2FA, 
+    checkLoggedInToken, 
+    deleteExpired, 
+    deleteSession,
+    generateSessionToken, 
+    hasIPRateLimitBeenReached, 
+    minutes, 
+    send2FA, 
+    storeSession, 
+} from '../helpers/security';
 import {beforeAll, describe, expect, jest} from '@jest/globals';
 import Code2FAModel from '../models/codes2FA.js';
 
@@ -47,10 +57,10 @@ describe('IP rate limiting test', () => {
         expect(hasIPRateLimitBeenReached(IP, 500, MAX_ATTEMPTS)).toBe(false);
         expect(hasIPRateLimitBeenReached(IP, 500, MAX_ATTEMPTS)).toBe(true);
         return new Promise(resolve => setTimeout(resolve, 500))
-        .then(() => {
-            expect(hasIPRateLimitBeenReached(IP, 500, MAX_ATTEMPTS)).toBe(false);
-            expect(hasIPRateLimitBeenReached(IP, 500, MAX_ATTEMPTS)).toBe(true);
-        });
+            .then(() => {
+                expect(hasIPRateLimitBeenReached(IP, 500, MAX_ATTEMPTS)).toBe(false);
+                expect(hasIPRateLimitBeenReached(IP, 500, MAX_ATTEMPTS)).toBe(true);
+            });
     });
 });
 
@@ -77,7 +87,7 @@ describe('check2FA should verify entered code against db stored code and timesta
     let EXPIRED_CODE = -1;
 
     beforeAll(async () => {
-        VALID_CODE = await send2FA(actuallySend=false, actuallyStore=true);
+        VALID_CODE = await send2FA(false, true);
         EXPIRED_CODE = await send2FA(0, false, true);
         INCORRECT_CODE = VALID_CODE + 1;
     });
@@ -85,36 +95,36 @@ describe('check2FA should verify entered code against db stored code and timesta
     it('should pass if the code is correct within window', async () => {
         expect(VALID_CODE).not.toBe(-1);
         return check2FA(VALID_CODE)
-        .then(res => expect(res).toBe(true));
+            .then(res => expect(res).toBe(true));
     });
 
     it('should fail if the code is incorrect within window', () => {
         expect(INCORRECT_CODE).not.toBe(-1);
         return check2FA(INCORRECT_CODE)
-        .then(res => expect(res).toBe(false));
+            .then(res => expect(res).toBe(false));
     });
 
     it('should fail if the window has expired', async () => {
         expect(EXPIRED_CODE).not.toBe(-1);
         return check2FA(EXPIRED_CODE)
-        .then(res => expect(res).toBe(false));
+            .then(res => expect(res).toBe(false));
     });
 });
 
 describe('storeSession should store session info in the database given a valid token', () => {
     it('should not store without a token', () => {
         return storeSession(undefined, ONE_MINUTE, '1.1.1.1', false)
-        .then(result => expect(result).toBe(false));
+            .then(result => expect(result).toBe(false));
     });
 
     it('should not store an empty token', () => {
         return storeSession('', ONE_MINUTE, '1.1.1.1', false)
-        .then(res => expect(res).toBe(false));
+            .then(res => expect(res).toBe(false));
     });
 
     it('should store a valid token', () => {
         return storeSession('ABCDEFGH01823821VIJK28218L', ONE_MINUTE, '1.1.1.1', false)
-        .then(res => expect(res).toBe(true));
+            .then(res => expect(res).toBe(true));
     });
 });
 
@@ -135,7 +145,7 @@ describe("Check logged in token from cookie", () => {
         const TOKEN = 'ABCDEFGH01823821VIJK28218L';
         await storeSession(TOKEN, ONE_MINUTE, '1.1.1.1', false);
         return checkLoggedInToken(TOKEN)
-        .then(res => expect(res).toBe(true));
+            .then(res => expect(res).toBe(true));
     });
 });
 
@@ -153,3 +163,24 @@ describe("Delete expired should delete successfully", () => {
             .then(count => expect(count).toBeGreaterThan(0));
     });
 });
+
+describe("Delete session should delete the session", () => {
+    it('should not delete with no token', async () => {
+        return deleteSession()
+            .then(res => expect(res).toBe(false));
+    });
+
+    it('should not delete with valid but not present token', () => {
+        return deleteSession("ABCD012345667")
+            .then(res => expect(res).toBe(false));
+    });
+
+    it('should delete a present token', () => {
+        const token = generateSessionToken();
+        return storeSession(token, TEN_MINUTES, '1.1.1.1', false)
+            .then(res => {
+                expect(res).toBe(true);
+                return deleteSession(token);
+            }).then(res => expect(res).toBe(true));
+    });
+})

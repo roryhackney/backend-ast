@@ -1,6 +1,5 @@
-import connect from "./connect.js";
+import mongoose from "./connect.js";
 
-const mongoose = await connect();
 const Schema = mongoose.Schema;
 
 const BrandSchema = new Schema({

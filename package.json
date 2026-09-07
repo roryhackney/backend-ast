@@ -7,9 +7,10 @@
     "start": "node ./bin/www",
     "devstart": "nodemon ./bin/www",
     "serverstart": "set \"DEBUG=backend-ast:*\" && npm start",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js __tests__/helpers.test.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js __tests__/",
     "lint": "eslint",
-    "lint-fix": "eslint --fix ."
+    "lint-fix": "eslint --fix .",
+    "lint-fix-indents": "eslint --fix . --rule 'indent: [error, 4]'"
   },
   "dependencies": {
     "cookie-parser": "^1.4.7",

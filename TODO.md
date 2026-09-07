@@ -11,16 +11,15 @@
 //4.
     // A - Failure and out of attempts - Display error and block further attempts
     // B - Failure - Redisplay login form (go to step 1)
-    // C - Success - Send verification email, store session/cookie, and go to home (authenticated route)
+    // C - Success - Send verification email, store session/cookie with expiration set, and go to home (authenticated route)
 //5.
     // On every page, checkLoggedInToken
-    // On logout, delete all sessions with the token and all expired sessions
+    // On logout, delete all sessions with the token
     // Periodically, delete all expired cookies and sessions
 
 ## Security Features
-- Logout
-- Delete expired content from db
 - Shield each API with hasIPRateLimitBeenReached and checkLoggedInToken
+- Set one week expiration on cookies
 
 ## AST Features
 - Redesign art supply schemas/structure
@@ -28,7 +27,7 @@
 
 ## Other
 - Backups of db
-- Put API online and test with Postman / front end
+- Put API online and test with front end (eg cookies)
 
 ## Test Coverage
 
@@ -37,8 +36,8 @@
 [x] Login
 [x] Verify 2FA
 [x] Verify Session
-[ ] Logout
-[ ] Delete Expired
+[x] Logout
+[x] Delete Expired
 
 ### Helpers
 [x] Minutes
@@ -52,4 +51,4 @@
 [x] CheckLogin
 [x] StoreSession
 [x] CheckLoggedInToken
-[ ] DeleteExpired
+[x] DeleteExpired
