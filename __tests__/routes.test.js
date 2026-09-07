@@ -91,8 +91,8 @@ describe('2FA Verification test', () => {
 
 describe("Verify session test", () => {
     it("should not verify if not logged in", async () => {
-        const response = request(app).get("/verifySession").send();
-        return response.then(res => expect(res.status).toBe(401));
+        const response = await request(app).get("/verifySession").send();
+        expect(response.status).toBe(401);
     });
 
     it("should verify if logged in", async () => {
@@ -116,8 +116,8 @@ describe("Verify session test", () => {
     });
 
     it("should not verify if token is not in db", async () => {
-        return request(app).get("/verifySession").set("Cookie", ["token=AN_INVALID_TOKEN"])
-            .then(result => expect(result.status).toBe(401));
+        const result = await request(app).get("/verifySession").set("Cookie", ["token=AN_INVALID_TOKEN"]);
+        expect(result.status).toBe(401);
     });
 });
 

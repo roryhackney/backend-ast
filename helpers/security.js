@@ -168,16 +168,12 @@ export const send2FA = async (actuallySend=true, actuallyStore=true, window=TEN_
  */
 export const check2FA = async (enteredCode) => {
     const query = Code2FAModel.find({code: enteredCode}).sort("-expiresAt");
-    return query.exec().then(codeEntries => {
-        if (codeEntries.length === 0) {
-            return false;
-        } else {
-            if (Date.now() <= codeEntries[0].expiresAt) {
-                return true;
-            }
-            return false;
-        }
-    });
+    const codeEntries = await query.exec();
+    if (codeEntries.length === 0) {
+        return false;
+    } else {
+        return Date.now() <= codeEntries[0].expiresAt;
+    }
 }
 
 /** 
@@ -224,10 +220,8 @@ export const storeSession = async (token, window, ip, sendEmail=true) => {
 export const checkLoggedInToken = async (token) => {
     if (! token) return false;
     const query = Session.find({token: token}).sort("-expiresAt").limit(1);
-    return query.exec().then(res => {
-        if (res.length === 0 || res[0].expiresAt < Date.now()) return false;
-        return true;
-    });
+    const res = await query.exec();
+    return res.length !== 0 && res[0].expiresAt >= Date.now();
 };
 
 /**
@@ -241,16 +235,12 @@ export const deleteExpired = async(deleteSessions=true, delete2FAs=true) => {
     let sessionCount = 0;
     let codeCount = 0;
     if (deleteSessions) {
-        sessionCount = await Session.deleteMany({"expiresAt": {$lt: now}})
-            .then((result) => {
-                return result ? result.deletedCount : 0;
-            });
+        const result = await Session.deleteMany({"expiresAt": {$lt: now}});
+        sessionCount = result?.deletedCount ? result.deletedCount : 0;
     }
     if (delete2FAs) {
-        codeCount = await Code2FAModel.deleteMany({"expiresAt": {$lt: now}})
-            .then((result) => {
-                return result ? result.deletedCount : 0;
-            });
+        const result2FA = await Code2FAModel.deleteMany({"expiresAt": {$lt: now}});
+        codeCount = result2FA?.deletedCount ? result2FA.deletedCount : 0;
     }
     return sessionCount + codeCount;
 };
@@ -262,11 +252,9 @@ export const deleteExpired = async(deleteSessions=true, delete2FAs=true) => {
  */
 export const deleteSession = async (token) => {
     if (token) {
-        return await Session.deleteMany({"token": token})
-            .then((result) => {
-                const count = result.deletedCount ?? 0;
-                return count > 0;
-            });
+        const result = await Session.deleteMany({"token": token});
+        const count = result?.deletedCount ?? 0;
+        return count > 0;
     }
     return false;
 }
