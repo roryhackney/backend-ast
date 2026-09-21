@@ -14,16 +14,6 @@ import {
 
 const router = express.Router();
 
-router.get("/secure-api", async function(req, res) {
-    if (! req?.cookies?.token) {
-        res.status(401).send();
-    } else {
-        const authorized = await checkLoggedInToken(req.cookies.token);
-        if (! authorized) res.status(401).send();
-        else res.status(200).send();
-    }
-});
-
 //step 1: check login, send/store 2FA if success
 router.post("/login", async function(req, res) {
     const sendEmails = req?.body?.actuallySendEmails === false ? false : true;
@@ -85,7 +75,7 @@ router.get("/logout", function(req, res) {
     }
 });
 
-router.get("deleteExpiredSessionsAnd2FAs", (req, res) => {
+router.get("/deleteExpiredSessionsAnd2FAs", (req, res) => {
     deleteExpired();
     res.status(200).send();
 });
