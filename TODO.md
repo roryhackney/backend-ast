@@ -1,7 +1,10 @@
 //user flow
-//All API routes should check hasIPRateBeenReached
-//Authenticated routes should check checkLoggedInToken
-//Unauth routes (eg /login) should not work if there is a token?
+//TO DO: All API routes should check hasIPRateBeenReached
+    if (hasIPRateLimitBeenReached(getIP(req), TEN_MINUTES, 5, "/login")) {
+        res.status(429).send();
+    } else { ....the actual route code.... }
+//TO DO: Authenticated routes should check checkLoggedInToken
+//TO DO: Unauth routes (eg /login) should not work if there is a token?
 //1. enter username and password
 //2. call login api
 //3.
