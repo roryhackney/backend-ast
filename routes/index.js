@@ -40,7 +40,7 @@ router.post("/verify2FA", async function(req, res) {
         return res.status(401).json({"err": "No code sent"}).send();
     }
     const result = await check2FA(code);
-    if (! result) return res.status(401).json({"err": "check2FA returned false"}).send();
+    if (! result) return res.status(401).json({"err": "Invalid code"}).send();
 
     //generate token
     const token = generateSessionToken();
@@ -52,7 +52,7 @@ router.post("/verify2FA", async function(req, res) {
     if (! sessResult) return res.status(500).send();
 
     //set cookie locally
-    res.cookie("token", token, {httpOnly: true, secure: true}).send();
+    res.status(200).cookie("token", token, {httpOnly: true, secure: true}).send();
 });
 
 //step 3: check cookie, allow access if success

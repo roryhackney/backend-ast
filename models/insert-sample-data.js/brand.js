@@ -1,5 +1,5 @@
 import mongoose from '../connect.js';
-import Brand from '../brand.js';
+import Brand from '../supplies/brand.js';
 
 async function createBrand(name, description) {
     const brand = new Brand({name: name, description: description});

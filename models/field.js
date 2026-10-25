@@ -9,12 +9,6 @@ const FieldSchema = new Schema({
         trim: true,
         maxLength: 200
     },
-    description: {
-        type: String,
-        required: true,
-        trim: true,
-        maxLength: 300
-    },
     isRequired: {
         type: Boolean,
         required: true,
