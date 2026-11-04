@@ -9,22 +9,20 @@ const FieldSchema = new Schema({
         trim: true,
         maxLength: 200
     },
-    isRequired: {
-        type: Boolean,
-        required: true,
-        default: false
-    },
     inputType: {
         type: String,
         required: true,
         default: "text",
-        enum: ["text", "number", "color", "image", "radio", "checkboxes"]
+        enum: ["text", "number", "color", "image", "select"]
     },
-    options: [String], //for checkboxes/radios
-    regex: String, //for text, etc
+    previousValues: Map,
+    selectOptions: [String], //for select
     min: Number, //for numbers
     max: Number,
-    step: Number,
+    default: {
+        type: Schema.Types.Union,
+        of: [String, Number]
+    }
 });
 
 const model = new mongoose.Model("Field", FieldSchema);

@@ -5,7 +5,7 @@ import cookieParser from 'cookie-parser';
 import logger from 'morgan';
 
 import indexRouter from './routes/index.js';
-import usersRouter from './routes/users.js';
+import suppliesRouter from './routes/supplies.js';
 
 import { fileURLToPath } from 'url';
 const dname = dirname(fileURLToPath(import.meta.url));
@@ -23,16 +23,16 @@ app.use(express.static(join(dname, 'public')));
 
 //allow frontend to access backend api (CORS)
 app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.header(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept"
-  );
-  next();
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.header(
+        "Access-Control-Allow-Headers",
+        "Origin, X-Requested-With, Content-Type, Accept"
+    );
+    next();
 });
 
 app.use('/', indexRouter);
-app.use('/users', usersRouter);
+app.use('/supplies', suppliesRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

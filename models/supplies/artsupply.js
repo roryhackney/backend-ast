@@ -6,14 +6,30 @@ const ArtSupplySchema = new Schema({
     name: {
         type: String,
         required: true,
-        maxLength: 200,
-        trim: true
+        unique: true
+    },
+    category: {
+        type: Schema.Types.ObjectId,
+        ref: "Category"
+    },
+    location: {
+        type: Schema.Types.ObjectId,
+        ref: "Location"
+    },
+    quality: {
+        type: Number,
+        min: 1,
+        max: 5,
+        validate: validateInteger,
+        required: true
+    },
+    list: {
+        type: String,
+        enum: ["Love", "Hate", "Wish"]
     },
     fields: [{
         type: Schema.Types.ObjectId,
         ref: "Field"
-        //location, brand, line, quality, quantity, onWishlist, onHatelist, category - all supplies
-        //color, material, size, tip type, ......, demoImage, itemImage - depends on ArtSupply
     }]
 });
 
