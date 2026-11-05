@@ -1,7 +1,6 @@
 import express from 'express';
 import { sanitizeFilter } from 'mongoose';
-import Location from '../models/supplies/location.js';
-
+import { rapidAdd } from '../helpers/supplies';
 
 const router = express.Router();
 
@@ -53,19 +52,14 @@ router.get('/locations', async function(req, res) {
     return res.status(200).send({locations: 'No locations found.'});
 });
 
-router.post('/locations', function(req, res) {
-    const createLocation = async (name) => {
-        const loc = new Location({name: name});
-        try {
-            await loc.save();
-        } catch (err) {
-            console.log(`Unable to create Location ${name}: ${err}`);
-        }
-    };
-
-    createLocation('Desk gray shelf top');
-    createLocation('Desk gray shelf middle');
-    createLocation('Desk gray shelf bottom');
+router.post('/locations', async function(req, res) {
+    const locations = req.body.locations;
+    const status = await rapidAdd(locations, 'location');
+    if (status.success) {
+        res.status(200).json(status);
+    } else {
+        res.status(400).json(status);
+    }
 });
 
 export default router;

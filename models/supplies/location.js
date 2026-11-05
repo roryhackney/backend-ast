@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-const Location = mongoose.Schema({
+const Location = new mongoose.Schema({
     name: {
         type: String,
         required: true,
